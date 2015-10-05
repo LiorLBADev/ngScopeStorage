@@ -12,10 +12,16 @@
 
     const MODULE_NAME = 'ngScopeStorage';
 
-    var app = angular.module('ngScopeStorage', []);
+    angular.module('ngScopeStorage', []);
 
-    app.provider('$vms', _vms);
 
+    angular.module('ngScopeStorage')
+    
+    .provider('$vms', _vms);
+    
+    /*
+    *_vms is the provider's function
+    */
     function _vms () {
 
         /*required*/
@@ -30,6 +36,8 @@
         var _storage = window[_storageType];
 
         /*setters*/
+        
+        set_scope.$injector=["scope"];
         function set_scope(scope) {
             if (typeof scope !== 'object') {
                 throw new TypeError( MODULE_NAME + '- set_scope must get a object.');
@@ -39,7 +47,8 @@
             }
             _scope = scope;
         }
-
+        
+        set_ctrlName.$injector=["ctrl"];
         function set_ctrlName(ctrl) {
             if (typeof ctrl !== 'string') {
                 throw new TypeError( MODULE_NAME + '- set_ctrlName must get a string.');
@@ -50,6 +59,7 @@
             _ctrlName = ctrl;
         }
 
+        set_prefix.$injector=["pre"];
         function set_prefix(pre) {
             if (typeof pre !== 'string') {
                 throw new TypeError( MODULE_NAME + '- set_prefix must get a string.');
@@ -60,6 +70,7 @@
             _prefix = pre;
         }
 
+        set_storageType.$injector=["st"];
         function set_storageType(st) {
             if (typeof st !== 'string') {
                 throw new TypeError( MODULE_NAME + '- set_storageType must get a string.');
@@ -72,6 +83,7 @@
         }
 
         /*cleaners*/
+        clean_storage.$injector=["_storage"];
         function clean_storage(_storage){
             for (var e in _storage) {
                 //console.log(e);
@@ -81,11 +93,18 @@
             }
         }
 
-        this.$get = [function () {
+        this.$get = function () {
 
             var _$vms = {};
+            _$vms.config = vmConfig
 
-            _$vms.config = function(settingsObj){
+            Object.observe(_$vms,bind);
+
+            return _$vms;
+            
+            /*$Get-Helpers*/
+            vmConfig.$injector=["settingObj"];
+            function vmConfig(settingsObj){
 
                 set_scope(settingsObj.scope);
                 set_ctrlName(settingsObj.ctrlName);
@@ -93,27 +112,29 @@
                 if(angular.isDefined(settingsObj.prefix)){set_prefix(settingsObj.prefix)}
                 if(angular.isDefined(settingsObj.storageType)){set_storageType(settingsObj.storageType)}
                 init();
-            };
-
+        };
+            
+            init.$injector=[];
             function init(){
-                clean_storage(_storage);
-                _$vms.prefix =_prefix+':'+_ctrlName+'::';
-            }
+            clean_storage(_storage);
+            _$vms.prefix =_prefix+':'+_ctrlName+'::';
+        }
 
-            var handler = function(changes) {  bind(changes); };
-            Object.observe(_$vms,handler);
-
+            bind.$injector=["keys"];
             function bind (keys){
-
-                keys.forEach(function (e) {
-                    var name = e.name;
-                    _scope[name] = e.object[name];
-                    _storage.setItem(_prefix+':'+_ctrlName+'::'+name , _scope[name]);
-                });
-                _scope.$apply();
+        
+                        keys.forEach(function (e) {
+                            var name = e.name;
+                            _scope[name] = e.object[name];
+                            _storage.setItem(_prefix+':'+_ctrlName+'::'+name , _scope[name]);
+                        });
+                        _scope.$apply();
+                    }
+        };
+        
+        
+        
             }
-
-            return _$vms;
-        }];
-    }
 })(window, window.angular);
+
+
